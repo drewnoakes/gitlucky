@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.421
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitLucky", "GitLucky\GitLucky.csproj", "{7166254D-75C6-415F-915E-D75F04A18C93}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8161B7CB-3E0B-4428-83D3-9ED3EE40CB75}"
+	ProjectSection(SolutionItems) = preProject
+		..\.gitattributes = ..\.gitattributes
+		..\.gitignore = ..\.gitignore
+		..\LICENSE.md = ..\LICENSE.md
+		..\README.md = ..\README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7166254D-75C6-415F-915E-D75F04A18C93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7166254D-75C6-415F-915E-D75F04A18C93}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7166254D-75C6-415F-915E-D75F04A18C93}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7166254D-75C6-415F-915E-D75F04A18C93}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6C7839EB-E164-45A7-B2A3-4068F4B28472}
+	EndGlobalSection
+EndGlobal
