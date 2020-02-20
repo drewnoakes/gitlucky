@@ -104,7 +104,7 @@ namespace GitLucky
                 return bytes.AsSpan(group.Index, group.Length);
             }
 
-            IEnumerable<(uint author, uint commit)> Deltas()
+            static IEnumerable<(uint author, uint commit)> Deltas()
             {
                 yield return (0, 0);
 
@@ -119,7 +119,7 @@ namespace GitLucky
                 }
             }
 
-            void WriteNum(Span<byte> span, uint number)
+            static void WriteNum(Span<byte> span, uint number)
             {
                 var t = span.Length - 1;
 

@@ -55,9 +55,9 @@ namespace GitLucky
                 : default;
             return true;
 
-            int ToHexNibble(char c) => c - (c < '9' ? '0' : 87);
+            static int ToHexNibble(char c) => c - (c < '9' ? '0' : 87);
 
-            void PrintUsage()
+            static void PrintUsage()
             {
                 Console.Out.WriteLine("GitLucky");
                 Console.Out.WriteLine();

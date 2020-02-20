@@ -14,7 +14,7 @@ namespace GitLucky
             var patch = GetProcessOutputString($"cat-file -p {headSha1.Trim()}");
             return patch;
 
-            string GetProcessOutputString(string args)
+            static string GetProcessOutputString(string args)
             {
                 var startInfo = new ProcessStartInfo
                 {
