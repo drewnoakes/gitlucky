@@ -51,7 +51,7 @@ namespace GitLucky
             }
 
             trailingNibble = prefix.Length % 2 != 0
-                ? ToHexNibble(prefix[prefix.Length - 1]) << 4
+                ? ToHexNibble(prefix[^1]) << 4
                 : default;
             return true;
 
