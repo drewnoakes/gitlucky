@@ -34,7 +34,7 @@ namespace GitLucky
                         var commitTimeSpan = FindTime(bytes, "committer", out uint originalCommitTime);
                         var sha = new SHA1CryptoServiceProvider();
                         var prefixSpan = prefixBytes.AsSpan();
-                        var enumerator = Deltas().GetEnumerator();
+                        var enumerator = Deltas();
 
                         for (var i = 0; i < threadId; i++)
                             enumerator.MoveNext();
@@ -104,7 +104,7 @@ namespace GitLucky
                 return bytes.AsSpan(group.Index, group.Length);
             }
 
-            static IEnumerable<(uint author, uint commit)> Deltas()
+            static IEnumerator<(uint author, uint commit)> Deltas()
             {
                 yield return (0, 0);
 
