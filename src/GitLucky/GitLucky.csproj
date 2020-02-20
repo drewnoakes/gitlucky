@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <ToolCommandName>gitlucky</ToolCommandName>
     <PackAsTool>true</PackAsTool>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <PackageProjectUrl>https://github.com/drewnoakes/gitlucky</PackageProjectUrl>
     <PackageIconUrl>https://raw.githubusercontent.com/drewnoakes/gitlucky/master/logo/logo-128px.png</PackageIconUrl>
     <RepositoryUrl>https://github.com/drewnoakes/gitlucky.git</RepositoryUrl>
