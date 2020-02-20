@@ -23,7 +23,7 @@ namespace GitLucky
             var foundAuthorTime = 0u;
             var foundCommitTime = 0u;
             var threadCount = Environment.ProcessorCount;
-            var hashCountTotal = 0;
+            var hashCountTotal = 0L;
 
             var threads = Enumerable.Range(0, threadCount)
                 .Select(threadId => new Thread(
@@ -39,7 +39,7 @@ namespace GitLucky
                         for (var i = 0; i < threadId; i++)
                             enumerator.MoveNext();
 
-                        int hashCount = 0;
+                        var hashCount = 0L;
 
                         while (done == 0)
                         {
