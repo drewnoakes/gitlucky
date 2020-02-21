@@ -43,10 +43,10 @@ namespace GitLucky
 
                         while (done == 0)
                         {
-                            var delta = enumerator.Current;
+                            var (authorTime, commitTime) = enumerator.Current;
 
-                            WriteNum(authorTimeSpan, originalAuthorTime - delta.author);
-                            WriteNum(commitTimeSpan, originalCommitTime - delta.commit);
+                            WriteNum(authorTimeSpan, originalAuthorTime - authorTime);
+                            WriteNum(commitTimeSpan, originalCommitTime - commitTime);
 
                             var hash = sha.ComputeHash(bytes);
 
@@ -58,8 +58,8 @@ namespace GitLucky
                                 {
                                     if (Interlocked.CompareExchange(ref done, 1, 0) == 0)
                                     {
-                                        foundAuthorTime = originalAuthorTime - delta.author;
-                                        foundCommitTime = originalCommitTime - delta.commit;
+                                        foundAuthorTime = originalAuthorTime - authorTime;
+                                        foundCommitTime = originalCommitTime - commitTime;
                                         break;
                                     }
                                 }
