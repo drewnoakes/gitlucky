@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 namespace GitLucky
 {
     internal static class Cli
     {
-        public static bool Parse(string[] args, out byte[] prefixBytes, out int? trailingNibble)
+        public static bool Parse(string[] args, [NotNullWhen(returnValue: true)] out byte[]? prefixBytes, out int? trailingNibble)
         {
             prefixBytes = default;
             trailingNibble = default;
