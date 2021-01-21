@@ -1,5 +1,9 @@
 ﻿# GitLucky 🍀
 
+
+[![GitLucky NuGet version](https://img.shields.io/nuget/v/GitLucky)](https://www.nuget.org/packages/GitLucky/)
+[![GitLucky NuGet download count](https://img.shields.io/nuget/dt/GitLucky)](https://www.nuget.org/packages/GitLucky/)
+
 Amends the last git commit to have the desired SHA-1 prefix.
 
 This is done by searching for negative deltas to the author and commit
