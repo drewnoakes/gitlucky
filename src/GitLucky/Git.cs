@@ -12,7 +12,9 @@ namespace GitLucky
         {
             var headSha1 = GetProcessOutputString("rev-parse HEAD");
             var patch = GetProcessOutputString($"cat-file -p {headSha1.Trim()}");
-            return patch;
+            // Normalize line endings to LF. Git objects use LF internally,
+            // but on Windows, process output may contain CRLF.
+            return patch.Replace("\r\n", "\n");
 
             static string GetProcessOutputString(string args)
             {
