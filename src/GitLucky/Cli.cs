@@ -31,7 +31,7 @@ namespace GitLucky
                     return false;
             }
 
-            if (!Regex.IsMatch(prefix, "^[a-fA-F0-9]{1,40}$"))
+            if (!Regex.IsMatch(prefix, "^[a-fA-F0-9]{1,64}$"))
             {
                 Console.Error.WriteLine($"Unable to parse prefix \"{prefix}\".");
                 Console.Out.WriteLine();
@@ -62,11 +62,13 @@ namespace GitLucky
             {
                 Console.Out.WriteLine("GitLucky");
                 Console.Out.WriteLine();
-                Console.Out.WriteLine("Amends the last git commit to have the desired SHA-1 prefix.");
+                Console.Out.WriteLine("Amends the last git commit to have the desired hash prefix.");
                 Console.Out.WriteLine();
                 Console.Out.WriteLine("This is done by searching for negative deltas to the author and commit");
                 Console.Out.WriteLine("timestamps such that the resulting commit hash starts with a given prefix.");
                 Console.Out.WriteLine("The longer the prefix, the more time it will take to find a match.");
+                Console.Out.WriteLine();
+                Console.Out.WriteLine("Supports both SHA-1 and SHA-256 repositories.");
                 Console.Out.WriteLine();
                 Console.Out.WriteLine("Usage:");
                 Console.Out.WriteLine("\tGitLucky <prefix>");

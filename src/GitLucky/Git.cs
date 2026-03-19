@@ -10,28 +10,33 @@ namespace GitLucky
 
         public static string GetHeadCommitFile()
         {
-            var headSha1 = GetProcessOutputString("rev-parse HEAD");
-            var patch = GetProcessOutputString($"cat-file -p {headSha1.Trim()}");
+            var headSha = RunGit("rev-parse HEAD").Trim();
+            var content = RunGit($"cat-file -p {headSha}");
             // Normalize line endings to LF. Git objects use LF internally,
             // but on Windows, process output may contain CRLF.
-            return patch.Replace("\r\n", "\n");
+            return content.Replace("\r\n", "\n");
+        }
 
-            static string GetProcessOutputString(string args)
+        public static string GetObjectFormat()
+        {
+            return RunGit("rev-parse --show-object-format").Trim();
+        }
+
+        internal static string RunGit(string args)
+        {
+            var startInfo = new ProcessStartInfo
             {
-                var startInfo = new ProcessStartInfo
-                {
-                    FileName = "git.exe",
-                    Arguments = args,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    StandardOutputEncoding = Encoding,
-                    UseShellExecute = false
-                };
+                FileName = "git",
+                Arguments = args,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                StandardOutputEncoding = Encoding,
+                UseShellExecute = false
+            };
 
-                using (var proc = Process.Start(startInfo)!)
-                {
-                    return proc.StandardOutput.ReadToEnd();
-                }
+            using (var proc = Process.Start(startInfo)!)
+            {
+                return proc.StandardOutput.ReadToEnd();
             }
         }
 
@@ -41,7 +46,7 @@ namespace GitLucky
             {
                 proc.StartInfo = new ProcessStartInfo
                 {
-                    FileName = "git.exe",
+                    FileName = "git",
                     Arguments = $"commit --amend --allow-empty --no-gpg-sign --date=\"{foundAuthorTime} {authorTz}\" --file=-",
                     CreateNoWindow = true,
                     RedirectStandardInput = true,

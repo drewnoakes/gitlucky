@@ -15,6 +15,8 @@ namespace GitLucky
             if (!Cli.Parse(args, out var prefixBytes, out var trailingNibble))
                 return 1;
 
+            var objectFormat = Git.GetObjectFormat();
+            var useSha256 = objectFormat == "sha256";
             var commitFile = Git.GetHeadCommitFile();
 
             // Strip gpgsig/gpgsig-sha256 headers. These are multi-line headers
@@ -82,7 +84,7 @@ namespace GitLucky
                             WriteNum(authorTimeSpan, newAuthorTime);
                             WriteNum(commitTimeSpan, newCommitTime);
 
-                            var hash = SHA1.HashData(bytes);
+                            var hash = useSha256 ? SHA256.HashData(bytes) : SHA1.HashData(bytes);
 
                             hashCount++;
 
