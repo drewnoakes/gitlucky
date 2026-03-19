@@ -25,7 +25,15 @@ namespace GitLucky
 
             var commitMessageStartsAt = commitFile.IndexOf("\n\n", StringComparison.Ordinal) + 2;
             var commitMessage = commitFile.Substring(commitMessageStartsAt);
-            var commitText = $"commit {commitFile.Length}\0{commitFile}";
+
+            // Build the git object as bytes. Use byte count (not string char count)
+            // for the header, as they differ for non-ASCII content.
+            var commitContentBytes = Git.Encoding.GetBytes(commitFile);
+            var objectHeader = Git.Encoding.GetBytes($"commit {commitContentBytes.Length}\0");
+            var objectTemplate = new byte[objectHeader.Length + commitContentBytes.Length];
+            objectHeader.CopyTo(objectTemplate, 0);
+            commitContentBytes.CopyTo(objectTemplate, objectHeader.Length);
+
             var done = 0;
             var foundAuthorTime = 0u;
             var foundCommitTime = 0u;
@@ -38,7 +46,7 @@ namespace GitLucky
                 .Select(threadId => new Thread(
                     () =>
                     {
-                        var bytes = Git.Encoding.GetBytes(commitText);
+                        var bytes = (byte[])objectTemplate.Clone();
                         var authorTimeSpan = FindTime(bytes, "author", out uint originalAuthorTime, out var origAuthorTz);
                         var commitTimeSpan = FindTime(bytes, "committer", out uint originalCommitTime, out var origCommitterTz);
                         var prefixSpan = prefixBytes.AsSpan();
@@ -108,12 +116,32 @@ namespace GitLucky
 
             Span<byte> FindTime(byte[] bytes, string label, out uint baseTime, out string timezone)
             {
-                var regex = new Regex($@"^{label}.+> ([0-9]+) ([\+\-]\d{{4}})", RegexOptions.Multiline);
-                var match = regex.Match(commitText);
-                var group = match.Groups[1];
-                baseTime = uint.Parse(group.Value);
-                timezone = match.Groups[2].Value;
-                return bytes.AsSpan(group.Index, group.Length);
+                // Scan the byte array directly rather than using regex on a string,
+                // as string char indexes diverge from byte indexes for non-ASCII content.
+                var span = bytes.AsSpan();
+                var needle = Git.Encoding.GetBytes($"\n{label} ");
+                int labelPos = span.IndexOf(needle);
+                if (labelPos < 0)
+                    throw new InvalidOperationException($"Could not find {label} in commit object");
+
+                // Find "> " after the label (precedes the timestamp)
+                ReadOnlySpan<byte> gtSpace = [(byte)'>', (byte)' '];
+                int gtPos = span.Slice(labelPos).IndexOf(gtSpace);
+                int timeStart = labelPos + gtPos + 2;
+
+                // Read timestamp digits
+                int timeEnd = timeStart;
+                while (timeEnd < span.Length && span[timeEnd] >= (byte)'0' && span[timeEnd] <= (byte)'9')
+                    timeEnd++;
+
+                baseTime = 0;
+                for (int k = timeStart; k < timeEnd; k++)
+                    baseTime = baseTime * 10 + (uint)(span[k] - '0');
+
+                // Timezone is 5 chars after the space: e.g. "+0530"
+                timezone = Git.Encoding.GetString(bytes, timeEnd + 1, 5);
+
+                return bytes.AsSpan(timeStart, timeEnd - timeStart);
             }
 
             static IEnumerator<(uint author, uint commit)> Deltas()
