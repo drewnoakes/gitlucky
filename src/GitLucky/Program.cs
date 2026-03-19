@@ -49,6 +49,13 @@ namespace GitLucky
                         var bytes = (byte[])objectTemplate.Clone();
                         var authorTimeSpan = FindTime(bytes, "author", out uint originalAuthorTime, out var origAuthorTz);
                         var commitTimeSpan = FindTime(bytes, "committer", out uint originalCommitTime, out var origCommitterTz);
+
+                        // Minimum timestamps that preserve the original digit count.
+                        // WriteNum overwrites a fixed-width span, so shrinking the digit
+                        // count would leave a leading space that git would never write.
+                        var minAuthorTime = MinSameDigitCount(originalAuthorTime);
+                        var minCommitTime = MinSameDigitCount(originalCommitTime);
+
                         var prefixSpan = prefixBytes.AsSpan();
                         var enumerator = Deltas();
 
@@ -61,8 +68,19 @@ namespace GitLucky
                         {
                             var (authorTime, commitTime) = enumerator.Current;
 
-                            WriteNum(authorTimeSpan, originalAuthorTime - authorTime);
-                            WriteNum(commitTimeSpan, originalCommitTime - commitTime);
+                            var newAuthorTime = originalAuthorTime - authorTime;
+                            var newCommitTime = originalCommitTime - commitTime;
+
+                            // Skip deltas that would reduce the digit count
+                            if (newAuthorTime < minAuthorTime || newCommitTime < minCommitTime)
+                            {
+                                for (var i = 0; i < threadCount; i++)
+                                    enumerator.MoveNext();
+                                continue;
+                            }
+
+                            WriteNum(authorTimeSpan, newAuthorTime);
+                            WriteNum(commitTimeSpan, newCommitTime);
 
                             var hash = SHA1.HashData(bytes);
 
@@ -74,8 +92,8 @@ namespace GitLucky
                                 {
                                     if (Interlocked.CompareExchange(ref done, 1, 0) == 0)
                                     {
-                                        foundAuthorTime = originalAuthorTime - authorTime;
-                                        foundCommitTime = originalCommitTime - commitTime;
+                                        foundAuthorTime = newAuthorTime;
+                                        foundCommitTime = newCommitTime;
                                         authorTz = origAuthorTz;
                                         committerTz = origCommitterTz;
                                         break;
@@ -157,6 +175,14 @@ namespace GitLucky
                         yield return (i, j);
                     i++;
                 }
+            }
+
+            static uint MinSameDigitCount(uint value)
+            {
+                uint min = 1;
+                while (min * 10 <= value)
+                    min *= 10;
+                return min;
             }
 
             static void WriteNum(Span<byte> span, uint number)
