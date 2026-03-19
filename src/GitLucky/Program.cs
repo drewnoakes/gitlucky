@@ -42,7 +42,12 @@ internal static class Program
         objectHeader.CopyTo(objectTemplate, 0);
         commitContentBytes.CopyTo(objectTemplate, objectHeader.Length);
 
+        var prefixHexLength = prefixBytes.Length * 2 + (trailingNibble != null ? 1 : 0);
+        var expectedHashes = Math.Pow(16, prefixHexLength) / 2;
+
         var done = 0;
+        using ManualResetEventSlim doneEvent = new(false);
+
         var foundAuthorTime = 0u;
         var foundCommitTime = 0u;
         var authorTz = "";
@@ -51,6 +56,8 @@ internal static class Program
             ? Environment.ProcessorCount
             : Math.Max(1, Environment.ProcessorCount - 1);
         var hashCountTotal = 0L;
+        
+        const int FlushInterval = 100_000;
 
         var threads = Enumerable.Range(0, threadCount)
             .Select(threadId => new Thread(
@@ -100,12 +107,18 @@ internal static class Program
 
                         hashCount++;
 
+                        if (hashCount % FlushInterval == 0)
+                        {
+                            Interlocked.Add(ref hashCountTotal, FlushInterval);
+                        }
+
                         if (hashBuf.StartsWith(prefixSpan))
                         {
                             if (trailingNibble == null || (hashBuf[prefixSpan.Length] & 0xF0) == trailingNibble)
                             {
                                 if (Interlocked.Exchange(ref done, 1) == 0)
                                 {
+                                    doneEvent.Set();
                                     foundAuthorTime = newAuthorTime;
                                     foundCommitTime = newCommitTime;
                                     authorTz = origAuthorTz;
@@ -119,20 +132,43 @@ internal static class Program
                             enumerator.MoveNext();
                     }
 
-                    Interlocked.Add(ref hashCountTotal, hashCount);
+                    // Flush remaining unflushed hashes
+                    Interlocked.Add(ref hashCountTotal, hashCount % FlushInterval);
                 },
                 maxStackSize: 1024))
             .ToList();
 
+        var showProgress = !Console.IsOutputRedirected;
         var sw = Stopwatch.StartNew();
 
         foreach (var thread in threads)
             thread.Start();
 
+        // Progress loop: wait for signal or 500ms timeout
+        if (showProgress)
+        {
+            while (!doneEvent.Wait(500))
+            {
+                var totalHashes = Interlocked.Read(ref hashCountTotal);
+                var elapsed = sw.Elapsed;
+                var rate = elapsed.TotalSeconds > 0 ? totalHashes / elapsed.TotalSeconds : 0;
+                var fraction = totalHashes / expectedHashes;
+
+                WriteProgress(totalHashes, rate, fraction, expectedHashes, elapsed);
+            }
+        }
+
         foreach (var thread in threads)
             thread.Join();
 
-        Console.WriteLine($"{hashCountTotal:N0} hashes in {sw.Elapsed.TotalMilliseconds:N0} ms ({hashCountTotal / sw.Elapsed.TotalSeconds:N0}/sec)");
+        sw.Stop();
+        var finalTotal = Interlocked.Read(ref hashCountTotal);
+        var finalRate = sw.Elapsed.TotalSeconds > 0 ? finalTotal / sw.Elapsed.TotalSeconds : 0;
+
+        if (showProgress)
+            Console.Write("\r" + new string(' ', GetConsoleWidth()) + "\r");
+
+        Console.WriteLine($"{finalTotal:N0} hashes in {sw.Elapsed.TotalMilliseconds:N0} ms ({finalRate:N0}/sec)");
 
         if (done == 0)
         {
@@ -209,6 +245,51 @@ internal static class Program
                 number /= 10;
                 t--;
             }
+        }
+
+        static void WriteProgress(long totalHashes, double rate, double fraction, double expectedHashes, TimeSpan elapsed)
+        {
+            var width = GetConsoleWidth();
+            // Build the status text first so we can size the bar
+            var hashStr = FormatCount(totalHashes);
+            var rateStr = rate > 0 ? FormatCount((long)rate) + "/s" : "...";
+            var etaStr = rate > 0 ? "~" + FormatDuration(TimeSpan.FromSeconds(Math.Max(0, (expectedHashes - totalHashes) / rate))) : "...";
+            var pct = Math.Min(fraction, 0.999);
+            var status = $" {pct:P0} | {hashStr} | {rateStr} | ETA {etaStr}";
+
+            // Bar takes remaining width: [ + bar + ] + status
+            var barWidth = width - status.Length - 3; // 3 = '[' + ']' + ' ' padding
+            if (barWidth < 5) barWidth = 5;
+
+            var filled = (int)(pct * barWidth);
+            var bar = $"[{new string('\u2588', filled)}{new string('\u2591', barWidth - filled)}]{status}";
+
+            if (bar.Length > width)
+                bar = bar.Substring(0, width);
+
+            Console.Write("\r" + bar);
+        }
+
+        static string FormatCount(long count) => count switch
+        {
+            >= 1_000_000_000 => $"{count / 1_000_000_000.0:F1}B",
+            >= 1_000_000 => $"{count / 1_000_000.0:F1}M",
+            >= 1_000 => $"{count / 1_000.0:F1}K",
+            _ => count.ToString("N0")
+        };
+
+        static string FormatDuration(TimeSpan ts) => ts.TotalSeconds switch
+        {
+            < 1 => "<1s",
+            < 60 => $"{ts.TotalSeconds:F0}s",
+            < 3600 => $"{(int)ts.TotalMinutes}m {ts.Seconds}s",
+            _ => $"{(int)ts.TotalHours}h {ts.Minutes}m"
+        };
+
+        static int GetConsoleWidth()
+        {
+            try { return Console.WindowWidth; }
+            catch { return 80; }
         }
     }
 }
