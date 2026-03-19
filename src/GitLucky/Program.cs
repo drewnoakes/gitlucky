@@ -98,7 +98,7 @@ namespace GitLucky
                             {
                                 if (trailingNibble == null || (hashBuf[prefixSpan.Length] & 0xF0) == trailingNibble)
                                 {
-                                    if (Interlocked.CompareExchange(ref done, 1, 0) == 0)
+                                    if (Interlocked.Exchange(ref done, 1) == 0)
                                     {
                                         foundAuthorTime = newAuthorTime;
                                         foundCommitTime = newCommitTime;
