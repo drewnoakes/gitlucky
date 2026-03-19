@@ -140,7 +140,7 @@ internal static class Program
 
         return 0;
 
-        Span<byte> FindTime(byte[] bytes, string label, out uint baseTime, out string timezone)
+        static Span<byte> FindTime(byte[] bytes, string label, out uint baseTime, out string timezone)
         {
             // Scan the byte array directly rather than using regex on a string,
             // as string char indexes diverge from byte indexes for non-ASCII content.
