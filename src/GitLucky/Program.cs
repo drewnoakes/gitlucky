@@ -29,6 +29,8 @@ namespace GitLucky
             var done = 0;
             var foundAuthorTime = 0u;
             var foundCommitTime = 0u;
+            var authorTz = "";
+            var committerTz = "";
             var threadCount = Environment.ProcessorCount;
             var hashCountTotal = 0L;
 
@@ -37,8 +39,8 @@ namespace GitLucky
                     () =>
                     {
                         var bytes = Git.Encoding.GetBytes(commitText);
-                        var authorTimeSpan = FindTime(bytes, "author", out uint originalAuthorTime);
-                        var commitTimeSpan = FindTime(bytes, "committer", out uint originalCommitTime);
+                        var authorTimeSpan = FindTime(bytes, "author", out uint originalAuthorTime, out var origAuthorTz);
+                        var commitTimeSpan = FindTime(bytes, "committer", out uint originalCommitTime, out var origCommitterTz);
                         var prefixSpan = prefixBytes.AsSpan();
                         var enumerator = Deltas();
 
@@ -66,6 +68,8 @@ namespace GitLucky
                                     {
                                         foundAuthorTime = originalAuthorTime - authorTime;
                                         foundCommitTime = originalCommitTime - commitTime;
+                                        authorTz = origAuthorTz;
+                                        committerTz = origCommitterTz;
                                         break;
                                     }
                                 }
@@ -98,15 +102,17 @@ namespace GitLucky
 
             Console.Out.WriteLine("Match found");
 
-            Git.Amend(foundAuthorTime, foundCommitTime, commitMessage);
+            Git.Amend(foundAuthorTime, authorTz, foundCommitTime, committerTz, commitMessage);
 
             return 0;
 
-            Span<byte> FindTime(byte[] bytes, string label, out uint baseTime)
+            Span<byte> FindTime(byte[] bytes, string label, out uint baseTime, out string timezone)
             {
-                var regex = new Regex($@"^{label}.+> ([0-9]*)", RegexOptions.Multiline);
-                var group = regex.Match(commitText).Groups[1];
+                var regex = new Regex($@"^{label}.+> ([0-9]+) ([\+\-]\d{{4}})", RegexOptions.Multiline);
+                var match = regex.Match(commitText);
+                var group = match.Groups[1];
                 baseTime = uint.Parse(group.Value);
+                timezone = match.Groups[2].Value;
                 return bytes.AsSpan(group.Index, group.Length);
             }
 

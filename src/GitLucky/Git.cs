@@ -33,14 +33,14 @@ namespace GitLucky
             }
         }
 
-        public static void Amend(uint foundAuthorTime, uint foundCommitTime, string commitMessage)
+        public static void Amend(uint foundAuthorTime, string authorTz, uint foundCommitTime, string committerTz, string commitMessage)
         {
             using (var proc = new Process())
             {
                 proc.StartInfo = new ProcessStartInfo
                 {
                     FileName = "git.exe",
-                    Arguments = $"commit --amend --allow-empty --no-gpg-sign --date={foundAuthorTime} --file=-",
+                    Arguments = $"commit --amend --allow-empty --no-gpg-sign --date=\"{foundAuthorTime} {authorTz}\" --file=-",
                     CreateNoWindow = true,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
@@ -49,7 +49,7 @@ namespace GitLucky
                     UseShellExecute = false,
                     Environment =
                     {
-                        {"GIT_COMMITTER_DATE", foundCommitTime.ToString()}
+                        {"GIT_COMMITTER_DATE", $"{foundCommitTime} {committerTz}"}
                     }
                 };
 
