@@ -14,16 +14,16 @@ internal static class Program
 
     internal static int Run(string[] args, string? workingDirectory)
     {
-        if (!Cli.Parse(args, out var prefixBytes, out var trailingNibble, out var useMaxCores))
+        if (!Cli.Parse(args, out byte[]? prefixBytes, out int? trailingNibble, out bool useMaxCores))
             return 1;
 
         // Lower process priority so the machine stays responsive during search
         using var currentProcess = Process.GetCurrentProcess();
         currentProcess.PriorityClass = ProcessPriorityClass.BelowNormal;
 
-        var objectFormat = Git.GetObjectFormat(workingDirectory);
-        var useSha256 = objectFormat == "sha256";
-        var commitFile = Git.GetHeadCommitFile(workingDirectory);
+        string objectFormat = Git.GetObjectFormat(workingDirectory);
+        bool useSha256 = objectFormat == "sha256";
+        string commitFile = Git.GetHeadCommitFile(workingDirectory);
 
         // Strip gpgsig/gpgsig-sha256 headers. These are multi-line headers
         // where continuation lines start with a space. We strip them because
@@ -31,68 +31,68 @@ internal static class Program
         // making the predicted hash wrong. We use --no-gpg-sign instead.
         commitFile = Regex.Replace(commitFile, @"^gpgsig(?:-sha256)? .*\n(?: .*\n)*", "", RegexOptions.Multiline);
 
-        var commitMessageStartsAt = commitFile.IndexOf("\n\n", StringComparison.Ordinal) + 2;
-        var commitMessage = commitFile.Substring(commitMessageStartsAt);
+        int commitMessageStartsAt = commitFile.IndexOf("\n\n", StringComparison.Ordinal) + 2;
+        string commitMessage = commitFile.Substring(commitMessageStartsAt);
 
         // Build the git object as bytes. Use byte count (not string char count)
         // for the header, as they differ for non-ASCII content.
-        var commitContentBytes = Git.Encoding.GetBytes(commitFile);
-        var objectHeader = Git.Encoding.GetBytes($"commit {commitContentBytes.Length}\0");
-        var objectTemplate = new byte[objectHeader.Length + commitContentBytes.Length];
+        byte[] commitContentBytes = Git.Encoding.GetBytes(commitFile);
+        byte[] objectHeader = Git.Encoding.GetBytes($"commit {commitContentBytes.Length}\0");
+        byte[] objectTemplate = new byte[objectHeader.Length + commitContentBytes.Length];
         objectHeader.CopyTo(objectTemplate, 0);
         commitContentBytes.CopyTo(objectTemplate, objectHeader.Length);
 
-        var prefixHexLength = prefixBytes.Length * 2 + (trailingNibble != null ? 1 : 0);
-        var expectedHashes = Math.Pow(16, prefixHexLength) / 2;
+        int prefixHexLength = prefixBytes.Length * 2 + (trailingNibble != null ? 1 : 0);
+        double expectedHashes = Math.Pow(16, prefixHexLength) / 2;
 
-        var done = 0;
+        int done = 0;
         using ManualResetEventSlim doneEvent = new(false);
 
-        var foundAuthorTime = 0u;
-        var foundCommitTime = 0u;
-        var authorTz = "";
-        var committerTz = "";
-        var threadCount = useMaxCores
+        uint foundAuthorTime = 0;
+        uint foundCommitTime = 0;
+        string authorTz = "";
+        string committerTz = "";
+        int threadCount = useMaxCores
             ? Environment.ProcessorCount
             : Math.Max(1, Environment.ProcessorCount - 1);
-        var hashCountTotal = 0L;
-        
+        long hashCountTotal = 0;
+
         const int FlushInterval = 100_000;
 
         var threads = Enumerable.Range(0, threadCount)
             .Select(threadId => new Thread(
                 () =>
                 {
-                    var bytes = (byte[])objectTemplate.Clone();
-                    var authorTimeSpan = FindTime(bytes, "author", out uint originalAuthorTime, out var origAuthorTz);
-                    var commitTimeSpan = FindTime(bytes, "committer", out uint originalCommitTime, out var origCommitterTz);
+                    byte[] bytes = (byte[])objectTemplate.Clone();
+                    var authorTimeSpan = FindTime(bytes, "author", out uint originalAuthorTime, out string? origAuthorTz);
+                    var commitTimeSpan = FindTime(bytes, "committer", out uint originalCommitTime, out string? origCommitterTz);
 
                     // Minimum timestamps that preserve the original digit count.
                     // WriteNum overwrites a fixed-width span, so shrinking the digit
                     // count would leave a leading space that git would never write.
-                    var minAuthorTime = MinSameDigitCount(originalAuthorTime);
-                    var minCommitTime = MinSameDigitCount(originalCommitTime);
+                    uint minAuthorTime = MinSameDigitCount(originalAuthorTime);
+                    uint minCommitTime = MinSameDigitCount(originalCommitTime);
 
                     var prefixSpan = prefixBytes.AsSpan();
                     var enumerator = Deltas();
 
-                    for (var i = 0; i < threadId; i++)
+                    for (int i = 0; i < threadId; i++)
                         enumerator.MoveNext();
 
-                    var hashCount = 0L;
+                    long hashCount = 0L;
                     Span<byte> hashBuf = stackalloc byte[useSha256 ? 32 : 20];
 
                     while (done == 0)
                     {
                         var (authorTime, commitTime) = enumerator.Current;
 
-                        var newAuthorTime = originalAuthorTime - authorTime;
-                        var newCommitTime = originalCommitTime - commitTime;
+                        uint newAuthorTime = originalAuthorTime - authorTime;
+                        uint newCommitTime = originalCommitTime - commitTime;
 
                         // Skip deltas that would reduce the digit count
                         if (newAuthorTime < minAuthorTime || newCommitTime < minCommitTime)
                         {
-                            for (var i = 0; i < threadCount; i++)
+                            for (int i = 0; i < threadCount; i++)
                                 enumerator.MoveNext();
                             continue;
                         }
@@ -128,7 +128,7 @@ internal static class Program
                             }
                         }
 
-                        for (var i = 0; i < threadCount; i++)
+                        for (int i = 0; i < threadCount; i++)
                             enumerator.MoveNext();
                     }
 
@@ -138,7 +138,7 @@ internal static class Program
                 maxStackSize: 1024))
             .ToList();
 
-        var showProgress = !Console.IsOutputRedirected;
+        bool showProgress = !Console.IsOutputRedirected;
         var sw = Stopwatch.StartNew();
 
         foreach (var thread in threads)
@@ -149,10 +149,10 @@ internal static class Program
         {
             while (!doneEvent.Wait(500))
             {
-                var totalHashes = Interlocked.Read(ref hashCountTotal);
+                long totalHashes = Interlocked.Read(ref hashCountTotal);
                 var elapsed = sw.Elapsed;
-                var rate = elapsed.TotalSeconds > 0 ? totalHashes / elapsed.TotalSeconds : 0;
-                var fraction = totalHashes / expectedHashes;
+                double rate = elapsed.TotalSeconds > 0 ? totalHashes / elapsed.TotalSeconds : 0;
+                double fraction = totalHashes / expectedHashes;
 
                 WriteProgress(totalHashes, rate, fraction, expectedHashes, elapsed);
             }
@@ -162,8 +162,8 @@ internal static class Program
             thread.Join();
 
         sw.Stop();
-        var finalTotal = Interlocked.Read(ref hashCountTotal);
-        var finalRate = sw.Elapsed.TotalSeconds > 0 ? finalTotal / sw.Elapsed.TotalSeconds : 0;
+        long finalTotal = Interlocked.Read(ref hashCountTotal);
+        double finalRate = sw.Elapsed.TotalSeconds > 0 ? finalTotal / sw.Elapsed.TotalSeconds : 0;
 
         if (showProgress)
             Console.Write("\r" + new string(' ', GetConsoleWidth()) + "\r");
@@ -187,7 +187,7 @@ internal static class Program
             // Scan the byte array directly rather than using regex on a string,
             // as string char indexes diverge from byte indexes for non-ASCII content.
             var span = bytes.AsSpan();
-            var needle = Git.Encoding.GetBytes($"\n{label} ");
+            byte[] needle = Git.Encoding.GetBytes($"\n{label} ");
             int labelPos = span.IndexOf(needle);
             if (labelPos < 0)
                 throw new InvalidOperationException($"Could not find {label} in commit object");
@@ -216,12 +216,12 @@ internal static class Program
         {
             yield return (0, 0);
 
-            var i = 1u;
+            uint i = 1u;
             while (true)
             {
-                for (var j = 0u; j < i - 1; j++)
+                for (uint j = 0u; j < i - 1; j++)
                     yield return (j, i);
-                for (var j = 0u; j <= i; j++)
+                for (uint j = 0u; j <= i; j++)
                     yield return (i, j);
                 i++;
             }
@@ -237,7 +237,7 @@ internal static class Program
 
         static void WriteNum(Span<byte> span, uint number)
         {
-            var t = span.Length - 1;
+            int t = span.Length - 1;
 
             while (t >= 0)
             {
@@ -249,20 +249,20 @@ internal static class Program
 
         static void WriteProgress(long totalHashes, double rate, double fraction, double expectedHashes, TimeSpan elapsed)
         {
-            var width = GetConsoleWidth();
+            int width = GetConsoleWidth();
             // Build the status text first so we can size the bar
-            var hashStr = FormatCount(totalHashes);
-            var rateStr = rate > 0 ? FormatCount((long)rate) + "/s" : "...";
-            var etaStr = rate > 0 ? "~" + FormatDuration(TimeSpan.FromSeconds(Math.Max(0, (expectedHashes - totalHashes) / rate))) : "...";
-            var pct = Math.Min(fraction, 0.999);
-            var status = $" {pct:P0} | {hashStr} | {rateStr} | ETA {etaStr}";
+            string hashStr = FormatCount(totalHashes);
+            string rateStr = rate > 0 ? FormatCount((long)rate) + "/s" : "...";
+            string etaStr = rate > 0 ? "~" + FormatDuration(TimeSpan.FromSeconds(Math.Max(0, (expectedHashes - totalHashes) / rate))) : "...";
+            double pct = Math.Min(fraction, 0.999);
+            string status = $" {pct:P0} | {hashStr} | {rateStr} | ETA {etaStr}";
 
             // Bar takes remaining width: [ + bar + ] + status
-            var barWidth = width - status.Length - 3; // 3 = '[' + ']' + ' ' padding
+            int barWidth = width - status.Length - 3; // 3 = '[' + ']' + ' ' padding
             if (barWidth < 5) barWidth = 5;
 
-            var filled = (int)(pct * barWidth);
-            var bar = $"[{new string('\u2588', filled)}{new string('\u2591', barWidth - filled)}]{status}";
+            int filled = (int)(pct * barWidth);
+            string bar = $"[{new string('\u2588', filled)}{new string('\u2591', barWidth - filled)}]{status}";
 
             if (bar.Length > width)
                 bar = bar.Substring(0, width);

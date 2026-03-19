@@ -10,8 +10,8 @@ internal static class Git
 
     public static string GetHeadCommitFile(string? workingDirectory = null)
     {
-        var headSha = RunGit("rev-parse HEAD", workingDirectory).Trim();
-        var content = RunGit($"cat-file -p {headSha}", workingDirectory);
+        string headSha = RunGit("rev-parse HEAD", workingDirectory).Trim();
+        string content = RunGit($"cat-file -p {headSha}", workingDirectory);
         // Normalize line endings to LF. Git objects use LF internally,
         // but on Windows, process output may contain CRLF.
         return content.Replace("\r\n", "\n");
@@ -72,8 +72,8 @@ internal static class Git
             proc.StandardInput.Flush();
             proc.StandardInput.Close();
 
-            var output = proc.StandardOutput.ReadToEnd();
-            var error = proc.StandardError.ReadToEnd();
+            string output = proc.StandardOutput.ReadToEnd();
+            string error = proc.StandardError.ReadToEnd();
 
             proc.WaitForExit();
 

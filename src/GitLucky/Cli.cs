@@ -25,7 +25,7 @@ internal static class Cli
             return false;
         }
 
-        var prefix = argList[0];
+        string prefix = argList[0];
 
         switch (argList[0])
         {
@@ -47,7 +47,7 @@ internal static class Cli
 
         prefix = prefix.ToLower();
 
-        var byteCount = prefix.Length >> 1;
+        int byteCount = prefix.Length >> 1;
         prefixBytes = new byte[byteCount];
 
         for (int b = 0, h = 0; b < byteCount; b++)
@@ -66,7 +66,7 @@ internal static class Cli
 
         static void PrintUsage()
         {
-            var clover = Console.OutputEncoding.CodePage == 65001 ? " 🍀" : "";
+            string clover = Console.OutputEncoding.CodePage == 65001 ? " 🍀" : "";
             Console.Out.WriteLine($"""
                 GitLucky{clover}
 
