@@ -60,20 +60,23 @@ internal static class Cli
 
         static void PrintUsage()
         {
-            Console.Out.WriteLine("GitLucky");
-            Console.Out.WriteLine();
-            Console.Out.WriteLine("Amends the last git commit to have the desired hash prefix.");
-            Console.Out.WriteLine();
-            Console.Out.WriteLine("This is done by searching for negative deltas to the author and commit");
-            Console.Out.WriteLine("timestamps such that the resulting commit hash starts with a given prefix.");
-            Console.Out.WriteLine("The longer the prefix, the more time it will take to find a match.");
-            Console.Out.WriteLine();
-            Console.Out.WriteLine("Supports both SHA-1 and SHA-256 repositories.");
-            Console.Out.WriteLine();
-            Console.Out.WriteLine("Usage:");
-            Console.Out.WriteLine("\tGitLucky <prefix>");
-            Console.Out.WriteLine();
-            Console.Out.WriteLine("\t<prefix>\tThe desired commit SHA prefix, in hex");
+            var clover = Console.OutputEncoding.CodePage == 65001 ? " 🍀" : "";
+            Console.Out.WriteLine($"""
+                GitLucky{clover}
+
+                Amends the last git commit to have the desired hash prefix.
+
+                This is done by searching for negative deltas to the author and commit
+                timestamps such that the resulting commit hash starts with a given prefix.
+                The longer the prefix, the more time it will take to find a match.
+
+                Supports both SHA-1 and SHA-256 repositories.
+
+                Usage:
+                	GitLucky <prefix>
+
+                	<prefix>	The desired commit SHA prefix, in hex
+                """);
         }
     }
 }
