@@ -14,8 +14,12 @@ internal static class Program
 
     internal static int Run(string[] args, string? workingDirectory)
     {
-        if (!Cli.Parse(args, out var prefixBytes, out var trailingNibble))
+        if (!Cli.Parse(args, out var prefixBytes, out var trailingNibble, out var useMaxCores))
             return 1;
+
+        // Lower process priority so the machine stays responsive during search
+        using var currentProcess = Process.GetCurrentProcess();
+        currentProcess.PriorityClass = ProcessPriorityClass.BelowNormal;
 
         var objectFormat = Git.GetObjectFormat(workingDirectory);
         var useSha256 = objectFormat == "sha256";
@@ -43,7 +47,9 @@ internal static class Program
         var foundCommitTime = 0u;
         var authorTz = "";
         var committerTz = "";
-        var threadCount = Environment.ProcessorCount;
+        var threadCount = useMaxCores
+            ? Environment.ProcessorCount
+            : Math.Max(1, Environment.ProcessorCount - 1);
         var hashCountTotal = 0L;
 
         var threads = Enumerable.Range(0, threadCount)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
@@ -6,12 +7,17 @@ namespace GitLucky;
 
 internal static class Cli
 {
-    public static bool Parse(string[] args, [NotNullWhen(returnValue: true)] out byte[]? prefixBytes, out int? trailingNibble)
+    public static bool Parse(string[] args, [NotNullWhen(returnValue: true)] out byte[]? prefixBytes, out int? trailingNibble, out bool useMaxCores)
     {
         prefixBytes = default;
         trailingNibble = default;
+        useMaxCores = false;
 
-        if (args.Length != 1)
+        var argList = new List<string>(args);
+        if (argList.Remove("--max"))
+            useMaxCores = true;
+
+        if (argList.Count != 1)
         {
             Console.Error.WriteLine("Must pass a prefix as an argument.");
             Console.Out.WriteLine();
@@ -19,9 +25,9 @@ internal static class Cli
             return false;
         }
 
-        var prefix = args[0];
+        var prefix = argList[0];
 
-        switch (args[0])
+        switch (argList[0])
         {
             case "--help":
             case "-h":
@@ -73,9 +79,10 @@ internal static class Cli
                 Supports both SHA-1 and SHA-256 repositories.
 
                 Usage:
-                	GitLucky <prefix>
+                	GitLucky [--max] <prefix>
 
                 	<prefix>	The desired commit SHA prefix, in hex
+                	--max  		Use all CPU cores (default: reserve one)
                 """);
         }
     }
