@@ -62,7 +62,7 @@ internal static class Cli
             : default;
         return true;
 
-        static int ToHexNibble(char c) => c - (c < '9' ? '0' : 87);
+        static int ToHexNibble(char c) => c <= '9' ? c - '0' : c - 'a' + 10;
 
         static void PrintUsage()
         {
