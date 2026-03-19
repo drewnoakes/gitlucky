@@ -32,7 +32,6 @@ namespace GitLucky
                         var bytes = Git.Encoding.GetBytes(commitText);
                         var authorTimeSpan = FindTime(bytes, "author", out uint originalAuthorTime);
                         var commitTimeSpan = FindTime(bytes, "committer", out uint originalCommitTime);
-                        var sha = new SHA1CryptoServiceProvider();
                         var prefixSpan = prefixBytes.AsSpan();
                         var enumerator = Deltas();
 
@@ -48,7 +47,7 @@ namespace GitLucky
                             WriteNum(authorTimeSpan, originalAuthorTime - authorTime);
                             WriteNum(commitTimeSpan, originalCommitTime - commitTime);
 
-                            var hash = sha.ComputeHash(bytes);
+                            var hash = SHA1.HashData(bytes);
 
                             hashCount++;
 
