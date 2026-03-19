@@ -67,6 +67,7 @@ namespace GitLucky
                             enumerator.MoveNext();
 
                         var hashCount = 0L;
+                        Span<byte> hashBuf = stackalloc byte[useSha256 ? 32 : 20];
 
                         while (done == 0)
                         {
@@ -86,13 +87,16 @@ namespace GitLucky
                             WriteNum(authorTimeSpan, newAuthorTime);
                             WriteNum(commitTimeSpan, newCommitTime);
 
-                            var hash = useSha256 ? SHA256.HashData(bytes) : SHA1.HashData(bytes);
+                            if (useSha256)
+                                SHA256.TryHashData(bytes, hashBuf, out _);
+                            else
+                                SHA1.TryHashData(bytes, hashBuf, out _);
 
                             hashCount++;
 
-                            if (hash.AsSpan().StartsWith(prefixSpan))
+                            if (hashBuf.StartsWith(prefixSpan))
                             {
-                                if (trailingNibble == null || (hash[prefixSpan.Length] & 0xF0) == trailingNibble)
+                                if (trailingNibble == null || (hashBuf[prefixSpan.Length] & 0xF0) == trailingNibble)
                                 {
                                     if (Interlocked.CompareExchange(ref done, 1, 0) == 0)
                                     {
