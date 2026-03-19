@@ -16,6 +16,13 @@ namespace GitLucky
                 return 1;
 
             var commitFile = Git.GetHeadCommitFile();
+
+            // Strip gpgsig/gpgsig-sha256 headers. These are multi-line headers
+            // where continuation lines start with a space. We strip them because
+            // git commit --amend would generate a new (different) signature,
+            // making the predicted hash wrong. We use --no-gpg-sign instead.
+            commitFile = Regex.Replace(commitFile, @"^gpgsig(?:-sha256)? .*\n(?: .*\n)*", "", RegexOptions.Multiline);
+
             var commitMessageStartsAt = commitFile.IndexOf("\n\n", StringComparison.Ordinal) + 2;
             var commitMessage = commitFile.Substring(commitMessageStartsAt);
             var commitText = $"commit {commitFile.Length}\0{commitFile}";

@@ -40,7 +40,7 @@ namespace GitLucky
                 proc.StartInfo = new ProcessStartInfo
                 {
                     FileName = "git.exe",
-                    Arguments = $"commit --amend --allow-empty --date={foundAuthorTime} --file=-",
+                    Arguments = $"commit --amend --allow-empty --no-gpg-sign --date={foundAuthorTime} --file=-",
                     CreateNoWindow = true,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
