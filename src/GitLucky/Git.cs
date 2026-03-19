@@ -26,7 +26,7 @@ namespace GitLucky
                     UseShellExecute = false
                 };
 
-                using (var proc = Process.Start(startInfo))
+                using (var proc = Process.Start(startInfo)!)
                 {
                     return proc.StandardOutput.ReadToEnd();
                 }
