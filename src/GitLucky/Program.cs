@@ -114,8 +114,7 @@ namespace GitLucky
                         }
 
                         Interlocked.Add(ref hashCountTotal, hashCount);
-                    },
-                    maxStackSize: 1024))
+                    }))
                 .ToList();
 
             var sw = Stopwatch.StartNew();
