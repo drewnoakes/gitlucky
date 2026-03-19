@@ -10,14 +10,16 @@ namespace GitLucky
 {
     internal static class Program
     {
-        private static int Main(string[] args)
+        private static int Main(string[] args) => Run(args, workingDirectory: null);
+
+        internal static int Run(string[] args, string? workingDirectory)
         {
             if (!Cli.Parse(args, out var prefixBytes, out var trailingNibble))
                 return 1;
 
-            var objectFormat = Git.GetObjectFormat();
+            var objectFormat = Git.GetObjectFormat(workingDirectory);
             var useSha256 = objectFormat == "sha256";
-            var commitFile = Git.GetHeadCommitFile();
+            var commitFile = Git.GetHeadCommitFile(workingDirectory);
 
             // Strip gpgsig/gpgsig-sha256 headers. These are multi-line headers
             // where continuation lines start with a space. We strip them because
@@ -130,7 +132,7 @@ namespace GitLucky
 
             Console.Out.WriteLine("Match found");
 
-            Git.Amend(foundAuthorTime, authorTz, foundCommitTime, committerTz, commitMessage);
+            Git.Amend(foundAuthorTime, authorTz, foundCommitTime, committerTz, commitMessage, workingDirectory);
 
             return 0;
 

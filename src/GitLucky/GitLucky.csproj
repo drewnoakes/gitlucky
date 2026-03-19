@@ -18,4 +18,8 @@
     <Authors>Drew Noakes</Authors>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="GitLucky.Tests" />
+  </ItemGroup>
+
 </Project>

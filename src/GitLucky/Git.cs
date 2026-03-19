@@ -8,21 +8,21 @@ namespace GitLucky
     {
         public static readonly Encoding Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
-        public static string GetHeadCommitFile()
+        public static string GetHeadCommitFile(string? workingDirectory = null)
         {
-            var headSha = RunGit("rev-parse HEAD").Trim();
-            var content = RunGit($"cat-file -p {headSha}");
+            var headSha = RunGit("rev-parse HEAD", workingDirectory).Trim();
+            var content = RunGit($"cat-file -p {headSha}", workingDirectory);
             // Normalize line endings to LF. Git objects use LF internally,
             // but on Windows, process output may contain CRLF.
             return content.Replace("\r\n", "\n");
         }
 
-        public static string GetObjectFormat()
+        public static string GetObjectFormat(string? workingDirectory = null)
         {
-            return RunGit("rev-parse --show-object-format").Trim();
+            return RunGit("rev-parse --show-object-format", workingDirectory).Trim();
         }
 
-        internal static string RunGit(string args)
+        internal static string RunGit(string args, string? workingDirectory = null)
         {
             var startInfo = new ProcessStartInfo
             {
@@ -34,13 +34,16 @@ namespace GitLucky
                 UseShellExecute = false
             };
 
+            if (workingDirectory != null)
+                startInfo.WorkingDirectory = workingDirectory;
+
             using (var proc = Process.Start(startInfo)!)
             {
                 return proc.StandardOutput.ReadToEnd();
             }
         }
 
-        public static void Amend(uint foundAuthorTime, string authorTz, uint foundCommitTime, string committerTz, string commitMessage)
+        public static void Amend(uint foundAuthorTime, string authorTz, uint foundCommitTime, string committerTz, string commitMessage, string? workingDirectory = null)
         {
             using (var proc = new Process())
             {
@@ -59,6 +62,9 @@ namespace GitLucky
                         {"GIT_COMMITTER_DATE", $"{foundCommitTime} {committerTz}"}
                     }
                 };
+
+                if (workingDirectory != null)
+                    proc.StartInfo.WorkingDirectory = workingDirectory;
 
                 proc.Start();
 
