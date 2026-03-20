@@ -17,12 +17,12 @@ jobs:
   pack-pointer:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} --output ./nupkgs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: package-pointer
           path: nupkgs/*.nupkg
@@ -31,12 +31,12 @@ jobs:
   pack-any:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r any -p:PublishAot=false --output ./nupkgs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: package-any
           path: nupkgs/*.nupkg
@@ -48,12 +48,12 @@ jobs:
         rid: [win-x64, win-arm64]
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} --output ./nupkgs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: package-${{ matrix.rid }}
           path: nupkgs/*.nupkg
@@ -70,12 +70,12 @@ jobs:
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} --output ./nupkgs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: package-${{ matrix.rid }}
           path: nupkgs/*.nupkg
@@ -87,12 +87,12 @@ jobs:
         rid: [osx-x64, osx-arm64]
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} --output ./nupkgs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: package-${{ matrix.rid }}
           path: nupkgs/*.nupkg
@@ -107,10 +107,10 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: packages
           pattern: package-*
