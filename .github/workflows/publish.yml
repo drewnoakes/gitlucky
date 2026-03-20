@@ -1,0 +1,124 @@
+name: Publish to NuGet
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  PROJECT: src/GitLucky/GitLucky.csproj
+  CONFIGURATION: Release
+
+jobs:
+  # Build the top-level pointer package (any platform)
+  pack-pointer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} --output ./nupkgs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-pointer
+          path: nupkgs/*.nupkg
+
+  # Build the framework-dependent (any) CoreCLR fallback package
+  pack-any:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r any -p:PublishAot=false --output ./nupkgs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-any
+          path: nupkgs/*.nupkg
+
+  # Build Windows Native AOT packages
+  pack-windows:
+    strategy:
+      matrix:
+        rid: [win-x64, win-arm64]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} --output ./nupkgs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.rid }}
+          path: nupkgs/*.nupkg
+
+  # Build Linux Native AOT packages
+  pack-linux:
+    strategy:
+      matrix:
+        rid: [linux-x64, linux-arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} --output ./nupkgs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.rid }}
+          path: nupkgs/*.nupkg
+
+  # Build macOS Native AOT packages
+  pack-macos:
+    strategy:
+      matrix:
+        rid: [osx-x64, osx-arm64]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} --output ./nupkgs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.rid }}
+          path: nupkgs/*.nupkg
+
+  # Publish all packages to NuGet.org using trusted publishing (OIDC)
+  # Prerequisites: configure a trusted publisher on nuget.org linking to this
+  # repository and workflow, and create a GitHub environment named "nuget".
+  publish:
+    needs: [pack-pointer, pack-any, pack-windows, pack-linux, pack-macos]
+    runs-on: ubuntu-latest
+    environment: nuget
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: packages
+          pattern: package-*
+          merge-multiple: true
+      # Push RID-specific and 'any' packages first (names start with a letter after 'GitLucky.')
+      - name: Push RID-specific packages
+        run: |
+          for pkg in packages/GitLucky.[a-z]*.nupkg; do
+            dotnet nuget push "$pkg" --source https://api.nuget.org/v3/index.json
+          done
+      # Push the pointer package last so all dependencies are available
+      - name: Push pointer package
+        run: |
+          for pkg in packages/GitLucky.[0-9]*.nupkg; do
+            dotnet nuget push "$pkg" --source https://api.nuget.org/v3/index.json
+          done
