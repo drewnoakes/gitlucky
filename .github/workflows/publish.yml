@@ -115,15 +115,21 @@ jobs:
           path: packages
           pattern: package-*
           merge-multiple: true
+      # Exchange the GitHub OIDC token for a short-lived NuGet API key
+      - name: NuGet login (OIDC)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
       # Push RID-specific and 'any' packages first (names start with a letter after 'GitLucky.')
       - name: Push RID-specific packages
         run: |
           for pkg in packages/GitLucky.[a-z]*.nupkg; do
-            dotnet nuget push "$pkg" --source https://api.nuget.org/v3/index.json
+            dotnet nuget push "$pkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
           done
       # Push the pointer package last so all dependencies are available
       - name: Push pointer package
         run: |
           for pkg in packages/GitLucky.[0-9]*.nupkg; do
-            dotnet nuget push "$pkg" --source https://api.nuget.org/v3/index.json
+            dotnet nuget push "$pkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
           done
