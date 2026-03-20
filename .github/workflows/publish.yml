@@ -11,6 +11,7 @@ env:
   DOTNET_VERSION: '10.0.x'
   PROJECT: src/GitLucky/GitLucky.csproj
   CONFIGURATION: Release
+  VERSION: ${{ github.event.release.tag_name }}
 
 jobs:
   # Build the top-level pointer package (any platform)
@@ -21,7 +22,7 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} --output ./nupkgs
+      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -p:Version=${{ env.VERSION }} --output ./nupkgs
       - uses: actions/upload-artifact@v7
         with:
           name: package-pointer
@@ -35,7 +36,7 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r any -p:PublishAot=false --output ./nupkgs
+      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r any -p:PublishAot=false -p:Version=${{ env.VERSION }} --output ./nupkgs
       - uses: actions/upload-artifact@v7
         with:
           name: package-any
@@ -52,7 +53,7 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} --output ./nupkgs
+      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} -p:Version=${{ env.VERSION }} --output ./nupkgs
       - uses: actions/upload-artifact@v7
         with:
           name: package-${{ matrix.rid }}
@@ -74,7 +75,7 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} --output ./nupkgs
+      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} -p:Version=${{ env.VERSION }} --output ./nupkgs
       - uses: actions/upload-artifact@v7
         with:
           name: package-${{ matrix.rid }}
@@ -91,7 +92,7 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} --output ./nupkgs
+      - run: dotnet pack ${{ env.PROJECT }} -c ${{ env.CONFIGURATION }} -r ${{ matrix.rid }} -p:Version=${{ env.VERSION }} --output ./nupkgs
       - uses: actions/upload-artifact@v7
         with:
           name: package-${{ matrix.rid }}
