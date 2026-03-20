@@ -12,7 +12,7 @@
     <ToolPackageRuntimeIdentifiers>win-x64;win-arm64;linux-x64;linux-arm64;osx-x64;osx-arm64;any</ToolPackageRuntimeIdentifiers>
     <Version>0.1.1</Version>
     <PackageProjectUrl>https://github.com/drewnoakes/gitlucky</PackageProjectUrl>
-    <PackageIconUrl>https://raw.githubusercontent.com/drewnoakes/gitlucky/master/logo/logo-128px.png</PackageIconUrl>
+    <PackageIcon>logo-128px.png</PackageIcon>
     <RepositoryUrl>https://github.com/drewnoakes/gitlucky.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -22,6 +22,10 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="GitLucky.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\logo\logo-128px.png" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>
